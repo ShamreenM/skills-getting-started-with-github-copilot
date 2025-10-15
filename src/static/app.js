@@ -45,14 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
           `;
         }
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          ${participantsHTML}
-        `;
-
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
@@ -60,6 +52,31 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+        // Add delete event listeners after rendering
+        setTimeout(() => {
+          document.querySelectorAll('.delete-participant').forEach((icon) => {
+            icon.addEventListener('click', function (e) {
+              const activityName = icon.getAttribute('data-activity');
+              const email = icon.getAttribute('data-email');
+              if (confirm(`Remove ${email} from ${activityName}?`)) {
+                fetch(`/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`, {
+                  method: 'POST'
+                })
+                  .then(async (response) => {
+                    if (response.ok) {
+                      fetchActivities();
+                    } else {
+                      const result = await response.json();
+                      alert(result.detail || 'Failed to remove participant.');
+                    }
+                  })
+                  .catch(() => {
+                    alert('Error removing participant.');
+                  });
+              }
+            });
+          });
+        }, 0);
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
