@@ -20,12 +20,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
+        // Create participants list HTML
+        let participantsHTML = "";
+        if (details.participants.length > 0) {
+          participantsHTML = `
+            <div class="participants-section">
+              <strong>Participants:</strong>
+              <ul class="participants-list">
+                ${details.participants
+                  .map(
+                    (email) =>
+                      `<li><span class="participant-email">${email}</span></li>`
+                  )
+                  .join("")}
+              </ul>
+            </div>
+          `;
+        } else {
+          participantsHTML = `
+            <div class="participants-section">
+              <strong>Participants:</strong>
+              <p class="no-participants">No participants yet.</p>
+            </div>
+          `;
+        }
 
         activitiesList.appendChild(activityCard);
 
@@ -34,6 +52,31 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+        // Add delete event listeners after rendering
+        setTimeout(() => {
+          document.querySelectorAll('.delete-participant').forEach((icon) => {
+            icon.addEventListener('click', function (e) {
+              const activityName = icon.getAttribute('data-activity');
+              const email = icon.getAttribute('data-email');
+              if (confirm(`Remove ${email} from ${activityName}?`)) {
+                fetch(`/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`, {
+                  method: 'POST'
+                })
+                  .then(async (response) => {
+                    if (response.ok) {
+                      fetchActivities();
+                    } else {
+                      const result = await response.json();
+                      alert(result.detail || 'Failed to remove participant.');
+                    }
+                  })
+                  .catch(() => {
+                    alert('Error removing participant.');
+                  });
+              }
+            });
+          });
+        }, 0);
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
